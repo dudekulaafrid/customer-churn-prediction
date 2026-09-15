@@ -1,0 +1,51 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, accuracy_score, roc_auc_score
+
+# 1. Load the dataset
+# Make sure 'Telco-Customer-Churn.csv' is in the same directory as this script
+df = pd.read_csv('Telco-Customer-Churn.csv')
+
+# 2. Clean and preprocess data
+df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce')
+df['TotalCharges'].fillna(df['TotalCharges'].median(), inplace=True)
+
+# Remove unique identifier
+if 'customerID' in df.columns:
+    df.drop('customerID', axis=1, inplace=True)
+
+# Encode categorical columns to numerical values
+le = LabelEncoder()
+for col in df.columns:
+    if df[col].dtype == 'object':
+        df[col] = le.fit_transform(df[col])
+
+# 3. Define features (X) and target variable (y)
+X = df.drop('Churn', axis=1)
+y = df['Churn']
+
+# 4. Train-Test Split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+# 5. Feature Scaling
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# 6. Model Training
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train_scaled, y_train)
+
+# 7. Predictions & Evaluation
+y_pred = model.predict(X_test_scaled)
+
+print("--- Model Accuracy ---")
+print(f"Accuracy: {accuracy_score(y_test, y_pred) * 100:.2f}%\n")
+
+print("--- Classification Report ---")
+print(classification_report(y_test, y_pred))
